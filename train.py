@@ -7,7 +7,7 @@ from torchvision.transforms.functional import InterpolationMode
 
 from sr_cnn import SR_CNN
 from dataset import CustomImageDataset
-from path import load_image_path, train_val_split
+from image_path import load_image_path, train_val_split
 
 from tqdm import tqdm
 import time
@@ -66,6 +66,10 @@ if __name__ == '__main__':
     bs = 128
     criterion = nn.MSELoss()
     lr= torch.cat((1e-6 * torch.ones(10), 1e-7 * torch.ones(10)), dim = 0)
+    optimizer=optim.SGD( [{'params':net.conv1.parameters()},
+                            {'params':net.conv2.parameters()},
+                            {'params':net.conv3.parameters(), 'lr':1e-6}
+                        ], weight_decay=0.0005,lr=1e-7, momentum = 0.9)
     
     start=time.time()
     train_loss_hist = []
@@ -74,8 +78,9 @@ if __name__ == '__main__':
     for epoch in range(15):
             
         epoch_lr = lr[epoch]
-        # create a new optimizer at the beginning of each epoch: give the current learning rate.   
-        optimizer=optim.SGD( net.parameters() ,weight_decay=0.0005,lr=epoch_lr, momentum = 0.9)
+        # create a new optimizer at the beginning of each epoch: give the current learning rate.  
+
+
             
         # set the running quatities to zero at the beginning of the epoch
         running_loss=0
@@ -117,7 +122,7 @@ if __name__ == '__main__':
         
         elapsed = (time.time()-start)/60
     
-        print('epoch=',epoch, '\t time=', elapsed,'min','\t lr=', epoch_lr  ,'\t train_loss=', total_loss, '\t val_loss=',val_loss)
+        print('epoch=',epoch, '\t time=', elapsed,'min','\t train_loss=', total_loss, '\t val_loss=',val_loss)
         print(' ')
         
         torch.save(net.state_dict(), os.path.join(outputs_dir, 'epoch_{}.pth'.format(epoch)))
