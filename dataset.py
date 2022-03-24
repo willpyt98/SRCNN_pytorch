@@ -1,4 +1,5 @@
-from torchvision.io import read_image,ImageReadMode
+from PIL import Image
+from torchvision.io import read_image, ImageReadMode
 from torch.utils.data import Dataset
 
 class CustomImageDataset(Dataset):
@@ -12,7 +13,8 @@ class CustomImageDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.img_dir[idx]
-        image = read_image(img_path, ImageReadMode.RGB).float()
+        image = Image.open(img_path).convert('RGB')
+        # image = read_image(img_path, ImageReadMode.RGB).float()
         train = image
         label = image
         
@@ -22,5 +24,7 @@ class CustomImageDataset(Dataset):
         
         if self.transforms_train != None:
             train = self.transforms_train(train)
+        
+        label = label[:, 6:-6, 6:-6]
             
         return train, label

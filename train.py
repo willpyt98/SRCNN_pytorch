@@ -8,6 +8,7 @@ from torchvision.transforms.functional import InterpolationMode
 from sr_cnn import SR_CNN
 from dataset import CustomImageDataset
 from image_path import load_image_path, train_val_split
+from utils import init_weights
 
 from tqdm import tqdm
 import time
@@ -33,15 +34,17 @@ if __name__ == '__main__':
     all_img = load_image_path()
     train_img, val_img =  train_val_split(all_img)
     
-    transforms_label = torch.nn.Sequential(
+    transforms_label = transforms.Compose([
+        transforms.ToTensor(),
         transforms.CenterCrop(size = (128,128))
-    )
+    ])
 
-    transforms_train = torch.nn.Sequential(
+    transforms_train = transforms.Compose([
+        transforms.ToTensor(),
         transforms.CenterCrop(size = (128,128)),
         transforms.Resize(64, interpolation=InterpolationMode.BICUBIC),
         transforms.Resize(128, interpolation=InterpolationMode.BICUBIC)
-    )
+    ])
 
     train_dataset = CustomImageDataset(train_img, transforms_train, transforms_label)
     
@@ -55,6 +58,8 @@ if __name__ == '__main__':
     )
     
     net=SR_CNN()
+    #net.apply(init_weights)
+    
     device = torch.device('cuda')
     net = net.to(device)
     
@@ -65,23 +70,17 @@ if __name__ == '__main__':
         
     bs = 128
     criterion = nn.MSELoss()
-    lr= torch.cat((1e-6 * torch.ones(10), 1e-7 * torch.ones(10)), dim = 0)
     optimizer=optim.SGD( [{'params':net.conv1.parameters()},
                             {'params':net.conv2.parameters()},
-                            {'params':net.conv3.parameters(), 'lr':1e-6}
-                        ], weight_decay=0.0005,lr=1e-7, momentum = 0.9)
+                            {'params':net.conv3.parameters(), 'lr':1e-2}
+                        ], weight_decay=0.0005,lr=1e-1, momentum = 0.9)
     
     start=time.time()
     train_loss_hist = []
     val_loss_hist = []
 
     for epoch in range(15):
-            
-        epoch_lr = lr[epoch]
-        # create a new optimizer at the beginning of each epoch: give the current learning rate.  
-
-
-            
+                        
         # set the running quatities to zero at the beginning of the epoch
         running_loss=0
         num_batches=0
@@ -109,7 +108,7 @@ if __name__ == '__main__':
                 # START COMPUTING STATS
                 running_loss += loss.detach().item()     
                 num_batches+=1     
-                t.set_postfix(running_loss='{:.3f}'.format(running_loss/num_batches))
+                t.set_postfix(running_loss='{:.6f}'.format(running_loss/num_batches))
                 t.update(bs)
         
         # compute stats for the full training set
@@ -127,3 +126,4 @@ if __name__ == '__main__':
         
         torch.save(net.state_dict(), os.path.join(outputs_dir, 'epoch_{}.pth'.format(epoch)))
     
+    torch.save(net.state_dict(), os.path.join(outputs_dir, 'final_net.pth'))
