@@ -11,6 +11,7 @@ from utils import init_weights, train_val_split, load_image_path, clean_image
 from tqdm import tqdm
 import time
 import os
+import argparse
 
 def validation(val_loader):
     print("Start calulating validation loss")
@@ -29,6 +30,13 @@ def validation(val_loader):
 
 if __name__ == '__main__':
     
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--batch-size', type=int, default = 128)
+    parser.add_argument('--num-epoch', type=int, default = 50)
+    parser.add_argument('--optimizer', type=str, default = 'Adam')
+    parser.add_argument('--output-dir',type=str, required=True)
+    args = parser.parse_args()
+    
     all_img = load_image_path()
     all_img = clean_image(all_img)
     train_img, val_img =  train_val_split(all_img)
@@ -43,58 +51,53 @@ if __name__ == '__main__':
     train_dataset = CustomImageDataset(train_img, transforms)
     
     train_loader = DataLoader(
-        train_dataset, batch_size=128, shuffle=True, drop_last=True
+        train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True
     )
     
     val_dataset = CustomImageDataset(val_img, transforms)
     val_loader = DataLoader(
-        val_dataset, batch_size=128, shuffle=True, drop_last=True
+        val_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True
     )
     
     net=SR_CNN()
     
-    #net.apply(init_weights)
-    
-    #state_dict = net.state_dict()
-    
-    #weight_file = './result/Adam/final_net.pth'
-    #net.load_state_dict(torch.load(weight_file))
-    #net.eval()
-    
     device = torch.device('cuda')
     net = net.to(device)
     
-    outputs_dir = './result'
+    outputs_dir = args.output_dir
     
     if not os.path.exists(outputs_dir):
         os.makedirs(outputs_dir)
         
-    bs = 128
+    bs = args.batch_size
     criterion = nn.MSELoss()
-    #optimizer=optim.SGD( [{'params':net.conv1.parameters()},
-    #                        {'params':net.conv2.parameters()},
-    #                        {'params':net.conv3.parameters(), 'lr':1e-2}
-    #                    ], lr=1e-1, momentum = 0.9)
-
     
-    optimizer = optim.Adam([
-        {'params': net.conv1.parameters()},
-        {'params': net.conv2.parameters()},
-        {'params': net.conv3.parameters(), 'lr':1e-5 }
-    ], lr=1e-4)
+    if args.optimizer == 'Adam':
+        optimizer = optim.Adam([
+            {'params': net.conv1.parameters()},
+            {'params': net.conv2.parameters()},
+            {'params': net.conv3.parameters(), 'lr':1e-5 }
+        ], lr=1e-4)
+        
+    if args.optimizer == 'SGD':
+        optimizer = optim.SGD([
+            {'params': net.conv1.parameters()},
+            {'params': net.conv2.parameters()},
+            {'params': net.conv3.parameters(), 'lr':1e-5 }
+        ], lr=1e-4, momentum=0.9)
     
     start=time.time()
     train_loss_hist = []
     val_loss_hist = []
 
-    for epoch in range(50):
+    for epoch in range(args.num_epoch):
                         
         # set the running quatities to zero at the beginning of the epoch
         running_loss=0
         num_batches=0
         
         with tqdm(total=(len(train_dataset))- len(train_dataset) % bs) as t:
-            t.set_description('epoch: {}/{}'.format(epoch+1, 50))
+            t.set_description('epoch: {}/{}'.format(epoch+1, args.num_epoch))
      
             for minibatch_data,minibatch_label in train_loader:
     

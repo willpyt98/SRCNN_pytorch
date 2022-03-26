@@ -11,14 +11,14 @@ import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image-file', type=str, required=True)
+    parser.add_argument('--net-file', type=str, required=True)
     args = parser.parse_args()
     
     net = SR_CNN()
     
     state_dict = net.state_dict()
     
-    weight_file = './result/Adam/final_net.pth'
-    net.load_state_dict(torch.load(weight_file))
+    net.load_state_dict(torch.load(args.net_file))
     net.eval()
     
     image = Image.open(args.image_file).convert('RGB')
