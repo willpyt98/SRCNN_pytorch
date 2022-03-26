@@ -2,7 +2,7 @@
 An implementation of SRCNN using pytorch
 The orignal paper is [Image Super-Resolution Using Deep Convolutional Networks](https://arxiv.org/pdf/1501.00092.pdf) here
 
-# Difference between the implementation and the original paper
+# Difference from the original paper
 1. Adam is used instead of SGD
 2. Removed weight initialization 
 3. Trained on a different dataset. The dataset is available here: [BaiduYun](https://pan.baidu.com/s/1c0TvFyw)
