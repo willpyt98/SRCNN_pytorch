@@ -1,11 +1,10 @@
 import torch
-from torchvision.io import read_image,ImageReadMode
 from PIL import Image
 from torchvision.utils import save_image
 from sr_cnn import SR_CNN
 from torchvision import transforms
-from torchvision.transforms.functional import InterpolationMode
 from utils import calc_psnr
+from torch.nn.functional import interpolate
 
 import argparse
 
@@ -18,7 +17,7 @@ if __name__ == '__main__':
     
     state_dict = net.state_dict()
     
-    weight_file = './result/final_net.pth'
+    weight_file = './result/Adam/final_net.pth'
     net.load_state_dict(torch.load(weight_file))
     net.eval()
     
@@ -27,17 +26,13 @@ if __name__ == '__main__':
     image = trans(image)
     height = image.size()[1]
     width = image.size()[2]
-    transforms_train = transforms.Compose([
-        transforms.Resize(size = (height // 2, width //2),  interpolation=InterpolationMode.BICUBIC),
-        transforms.Resize(size =(height, width),interpolation=InterpolationMode.BICUBIC)
-    ])
-    bicubic = transforms_train(image)
+    low_res = interpolate(image.unsqueeze(0), scale_factor=0.5)
+    bicubic = interpolate(low_res, size=[height, width], mode='bicubic').squeeze(0)
 
-    save_image(bicubic, args.image_file.replace('.', '_bicubic.'))
-    
     with torch.no_grad():
        pred = net(bicubic)
        
+    save_image(bicubic, args.image_file.replace('.', '_bicubic.'))
     save_image(pred, args.image_file.replace('.', '_srcnn.'))
     metric_SRCNN= calc_psnr(image[:, 6:-6, 6:-6], pred)
     metric_bicubic = calc_psnr(image,bicubic)
