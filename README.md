@@ -14,3 +14,14 @@ Follow are the bicubic-img and srcnn-img
 ![avatar](https://raw.githubusercontent.com/willpyt98/SRCNN_pytorch/main/test/4_srcnn.jpg)
 
 ***psnr of Bicuibic image = 26.492; psnr of SRCNN image = 28.687***
+
+# Train
+```
+python train.py --output-dir './result' --optimizer Adam --num-epoch 50 --batch-size 128
+```
+
+# Test
+```
+python test.py --image-file test/4.jpg --net-file result/Adam/final_net.pth
+```
+
